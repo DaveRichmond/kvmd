@@ -52,5 +52,6 @@ case "$board" in
 				if [ "$port" == "1-1.4:1.0" ] || [ "$port" == "2-1:1.0" ]; then exit 0; else exit 1; fi;;
 			*) exit 0;;
 		esac;;
+	"orangepi") exit 0;; # let's just assume it's ok on the orangepi boards for now
 	*) exit 1;;
 esac
