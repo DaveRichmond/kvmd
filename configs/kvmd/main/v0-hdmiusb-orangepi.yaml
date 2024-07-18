@@ -13,7 +13,7 @@ kvmd:
         type: serial
 
     atx:
-        type: gpio
+        type: disabled
 
     msd:
         type: disabled
