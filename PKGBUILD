@@ -206,6 +206,7 @@ for _variant in "${_variants[@]}"; do
 		pkgdesc=\"PiKVM platform configs - $_platform for $_board\"
 		if [[ $_board == orangepi ]]; then
 			depends=(kvmd=$pkgver-$pkgrel \"linux-armv7>=6.9\")
+			conflicts=( raspberrypi-utils )
 		else 
 			depends=(kvmd=$pkgver-$pkgrel \"linux-rpi-pikvm>=6.6.21-3\"  raspberrypi-utils)
 		fi
@@ -229,6 +230,9 @@ for _variant in "${_variants[@]}"; do
 			install -Dm755 -t \"\$pkgdir/usr/bin\" scripts/kvmd-udev-restart-pass
 		fi
 
+		if [[ $_board == orangepi ]]; then
+			install -DTm755 testenv/fakes/vcgencmd \"\$pkgdir/usr/bin/vcgencmd\"
+		fi
 		install -DTm644 configs/os/sysctl.conf \"\$pkgdir/etc/sysctl.d/99-kvmd.conf\"
 		install -DTm644 configs/os/udev/common.rules \"\$pkgdir/usr/lib/udev/rules.d/99-kvmd-common.rules\"
 		install -DTm644 configs/os/udev/$_platform-$_board.rules \"\$pkgdir/etc/udev/rules.d/99-kvmd.rules\"
