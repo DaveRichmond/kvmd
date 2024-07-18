@@ -92,7 +92,6 @@ depends=(
 	"janus-gateway-pikvm>=0.14.2-3"
 	certbot
 	platform-io-access
-	raspberrypi-utils
 	"ustreamer>=6.11"
 
 	# Systemd UDEV bug
@@ -208,7 +207,7 @@ for _variant in "${_variants[@]}"; do
 		if [[ $_board == orangepi ]]; then
 			depends=(kvmd=$pkgver-$pkgrel \"linux-armv7>=6.9\")
 		else 
-			depends=(kvmd=$pkgver-$pkgrel \"linux-rpi-pikvm>=6.6.21-3\")
+			depends=(kvmd=$pkgver-$pkgrel \"linux-rpi-pikvm>=6.6.21-3\"  raspberrypi-utils)
 		fi
 
 		backup=(
