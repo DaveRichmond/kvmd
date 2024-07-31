@@ -41,7 +41,7 @@ for _variant in "${_variants[@]}"; do
 	pkgname+=(kvmd-platform-$_platform-$_board)
 done
 pkgbase=kvmd
-pkgver=4.2
+pkgver=4.3
 pkgrel=1
 pkgdesc="The main PiKVM daemon"
 url="https://github.com/daverichmond/kvmd"
@@ -109,7 +109,10 @@ depends=(
 	parted
 	e2fsprogs
 	openssh
-	wpa_supplicant
+	# FIXME:
+	#   - https://archlinuxarm.org/forum/viewtopic.php?f=15&t=17007&p=72789
+	#   - https://github.com/pikvm/pikvm/issues/1375
+	wpa_supplicant-pikvm
 	run-parts
 
 	# fsck for /boot
@@ -261,11 +264,11 @@ for _variant in "${_variants[@]}"; do
 		fi
 
 		mkdir -p \"\$pkgdir/usr/share/kvmd\"
-		local _device=\"\$pkgdir/usr/share/kvmd/device\"
-		rm -f \"\$_device\"
-		echo PIKVM_BASE=$_base > \"\$_device\"
-		echo PIKVM_VIDEO=$_video >> \"\$_device\"
-		echo PIKVM_BOARD=$_board >> \"\$_device\"
-		chmod 444 \"\$_device\"
+		local _platform=\"\$pkgdir/usr/share/kvmd/platform\"
+		rm -f \"\$_platform\"
+		echo PIKVM_MODEL=$_base > \"\$_platform\"
+		echo PIKVM_VIDEO=$_video >> \"\$_platform\"
+		echo PIKVM_BOARD=$_board >> \"\$_platform\"
+		chmod 444 \"\$_platform\"
 	}"
 done

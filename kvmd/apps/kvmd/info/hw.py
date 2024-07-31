@@ -47,11 +47,13 @@ _RetvalT = TypeVar("_RetvalT")
 class HwInfoSubmanager(BaseInfoSubmanager):
     def __init__(
         self,
+        platform_path: str,
         vcgencmd_cmd: list[str],
         ignore_past: bool,
         state_poll: float,
     ) -> None:
 
+        self.__platform_path = platform_path
         self.__vcgencmd_cmd = vcgencmd_cmd
         self.__ignore_past = ignore_past
         self.__state_poll = state_poll
@@ -60,12 +62,17 @@ class HwInfoSubmanager(BaseInfoSubmanager):
 
     async def get_state(self) -> dict:
         (
-            model, serial, throttling,
-            cpu_percent, cpu_temp,
-            (mem_percent, mem_total, mem_available),
+            base,
+            serial,
+            platform,
+            throttling,
+            cpu_percent,
+            cpu_temp,
+            mem,
         ) = await asyncio.gather(
             self.__read_dt_file("model"),
             self.__read_dt_file("serial-number"),
+            self.__read_platform_file(),
             self.__get_throttling(),
             self.__get_cpu_percent(),
             self.__get_cpu_temp(),
@@ -74,8 +81,9 @@ class HwInfoSubmanager(BaseInfoSubmanager):
         return {
             "platform": {
                 "type": "rpi",
-                "base": model,
+                "base": base,
                 "serial": serial,
+                **platform,  # type: ignore
             },
             "health": {
                 "temp": {
@@ -84,11 +92,7 @@ class HwInfoSubmanager(BaseInfoSubmanager):
                 "cpu": {
                     "percent": cpu_percent,
                 },
-                "mem": {
-                    "percent": mem_percent,
-                    "total": mem_total,
-                    "available": mem_available,
-                },
+                "mem": mem,
                 "throttling": throttling,
             },
         }
@@ -113,6 +117,24 @@ class HwInfoSubmanager(BaseInfoSubmanager):
                 get_logger(0).error("Can't read DT %s from %s: %s", name, path, err)
                 return None
         return self.__dt_cache[name]
+
+    async def __read_platform_file(self) -> dict:
+        try:
+            text = await aiotools.read_file(self.__platform_path)
+            parsed: dict[str, str] = {}
+            for row in text.split("\n"):
+                row = row.strip()
+                if row:
+                    (key, value) = row.split("=", 1)
+                    parsed[key.strip()] = value.strip()
+            return {
+                "model": parsed["PIKVM_MODEL"],
+                "video": parsed["PIKVM_VIDEO"],
+                "board": parsed["PIKVM_BOARD"],
+            }
+        except Exception:
+            get_logger(0).exception("Can't read device model")
+            return {"model": None, "video": None, "board": None}
 
     async def __get_cpu_temp(self) -> (float | None):
         temp_path = f"{env.SYSFS_PREFIX}/sys/class/thermal/thermal_zone0/temp"
@@ -141,13 +163,21 @@ class HwInfoSubmanager(BaseInfoSubmanager):
             get_logger(0).error("Can't get CPU percent: %s", err)
             return None
 
-    async def __get_mem(self) -> (tuple[float, int, int] | tuple[None, None, None]):
+    async def __get_mem(self) -> dict:
         try:
             st = psutil.virtual_memory()
-            return (st.percent, st.total, st.available)
+            return {
+                "percent": st.percent,
+                "total": st.total,
+                "available": st.available,
+            }
         except Exception as err:
             get_logger(0).error("Can't get memory info: %s", err)
-            return (None, None, None)
+            return {
+                "percent": None,
+                "total": None,
+                "available": None,
+            }
 
     async def __get_throttling(self) -> (dict | None):
         # https://www.raspberrypi.org/forums/viewtopic.php?f=63&t=147781&start=50#p972790
